@@ -22,7 +22,8 @@ def logloss(act, pred):
   pred = sp.maximum(epsilon, pred)
   pred = sp.minimum(1-epsilon, pred)
   ll = sum(np.multiply(act,sp.log(pred)) + np.multiply(sp.subtract(1,act),sp.log(sp.subtract(1,pred))))
-  ll = ll * 1.0/len(act)
+  ll = ll * 1.0/len(act);
+  print("the loss is %lf!" % -ll);
   return -ll;
 
 #对数损失函数
@@ -34,39 +35,49 @@ def logloss(act, pred):
 #     return -J;
 
 def predict(X_Test,Y_Test,theata):
-    h = X_Test*theata;
+    h = X_Test.dot(theata);
     Y_Pre = np.mat(sigmod(h));
     ls = logloss(Y_Test,Y_Pre);
     return Y_Pre,ls;
 
 def gradAscent(X_Train,Y_Train,theata,alpha,n_iter):
     m = X_Train.shape[0];
-    J = np.mat(np.zeros(n_iter).reshape(n_iter,1));
+    J = np.zeros(n_iter).reshape(n_iter,1);
     for i in range(n_iter):
-        index = int(np.round(np.random.random(1)[0]*m));
-        x = X_Train[index,:];
-        y = Y_Train[index,0];
+        index = int(np.round(np.random.random(1)[0]*(m-1)));
+        x = X_Train[index,:].reshape(1,X_Train.shape[1]);
+        y = Y_Train[index,0].reshape(1,1);
         J[i,0] = predict(X_Train,Y_Train,theata)[1];
         h = x.dot(theata);
         delta = x.T.dot((y-sigmod(h)));#x.T*y-x.T*h/(1+h);
         theata = theata + alpha*delta;
     return theata,J;
 
+def loadDataSet():
+    dataMat = [];
+    fr = open('testSet.txt');
+    for line in fr.readlines():
+        lineArr = line.strip().split();
+        dataMat.append([ float(lineArr[0]), float(lineArr[1]), 1.0, int(lineArr[2])]);
+        # labelMat.append()
+    return dataMat;
 
 if __name__ == '__main__':
-    # produce_data();
-    data = np.loadtxt('logistic_regression.txt', delimiter=' ');
+    #produce_data();
+    # data = np.loadtxt('logistic_regression.txt', delimiter='    ');
+    data = loadDataSet();
 
-    n_samples = 5000;
-    X_Train = np.mat(np.c_[data[:n_samples, 0],data[:n_samples, 1],np.ones(n_samples)]);  # load the X data, and merge b.
-    Y_Train = np.mat(np.c_[data[:n_samples, 2]]);  # load the y data
+    data = np.array(data);
+    n_samples = int(data.shape[0]*2/3);
+    X_Train = np.c_[data[:n_samples, 0],data[:n_samples, 1],data[:n_samples, 2]];  # load the X data, and merge b.
+    Y_Train = np.c_[data[:n_samples, 3]];  # load the y data
 
-    X_Test = np.mat(np.c_[np.ones(5000), data[5000:10000, 0], data[5000:10000, 1]]);
-    Y_Test = np.mat(np.c_[data[5000:10000, 2]]);
+    X_Test = np.c_[data[n_samples:data.shape[0], 0], data[n_samples:data.shape[0], 1], data[n_samples:data.shape[0],2]];
+    Y_Test = np.c_[data[n_samples:data.shape[0], 3]];
 
-    theata = np.mat(np.zeros(X_Train.shape[1]).reshape(3,1));
-    alpha = 0.01;
-    n_iter  = 150;
+    theata = np.zeros(X_Train.shape[1]).reshape(3,1);
+    alpha = 0.001;
+    n_iter  = 1000;
     [theata, J] = gradAscent(X_Train, Y_Train, theata, alpha, n_iter)
     [Y_Pre,loss] = predict(X_Test,Y_Test,theata);
 
